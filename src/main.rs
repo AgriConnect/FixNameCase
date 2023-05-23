@@ -7,8 +7,9 @@ use case_converter::camel_to_snake;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use eyre::eyre;
-use ignore::{DirEntry, Walk};
+use ignore::{DirEntry, WalkBuilder};
 use serde::{Deserialize, Serialize};
+use glob_match::glob_match;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Tag {
@@ -23,7 +24,14 @@ const UPPER_LETTERS: RangeInclusive<u8> = b'A'..=b'Z';
 fn main(folder: std::path::PathBuf) -> Result<()> {
     color_eyre::install()?;
     folder.try_exists().wrap_err("Input folder not exist")?;
-    let entries: Vec<DirEntry> = Walk::new(&folder).filter_map(|entry| entry.ok()).collect();
+    let walker = WalkBuilder::new(&folder).filter_entry(|d| {
+        let path = d.path();
+        if path.is_dir() {
+            return true;
+        }
+        path.to_str().map_or(false, |s| glob_match("*/**/*.{c,cpp,h,hpp}", s))
+    }).build();
+    let entries: Vec<DirEntry> = walker.filter_map(|entry| entry.ok()).collect();
     let _folder_path = folder.to_str().ok_or(eyre!("Invalid name"))?;
     let mut command = Command::new("ctags");
     command.stdin(Stdio::piped());
@@ -36,16 +44,7 @@ fn main(folder: std::path::PathBuf) -> Result<()> {
     let process = command.spawn()?;
     let file_paths: Vec<String> = entries
         .into_iter()
-        .filter_map(|d| {
-            let path = d.into_path().into_os_string().into_string().ok();
-            path.map(|p| {
-                if p.ends_with(".c") || p.ends_with(".cpp") || p.ends_with(".h") {
-                    Some(p)
-                } else {
-                    None
-                }
-            })?
-        })
+        .filter_map(|d| d.into_path().into_os_string().into_string().ok())
         .collect();
     let m = file_paths.join("\n");
     process
