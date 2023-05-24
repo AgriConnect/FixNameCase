@@ -1,6 +1,8 @@
 mod helpers;
 
+use std::ffi::{OsStr, OsString};
 use std::io::{Read, Write};
+use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{ops::RangeInclusive, str};
@@ -47,14 +49,15 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
         "-",
     ]);
     let process = command.spawn()?;
-    let file_paths: Vec<String> = entries
+    let filepaths: Vec<OsString> = entries
+        .clone()
         .into_iter()
-        .filter_map(|d| d.into_path().into_os_string().into_string().ok())
+        .map(|d| d.into_path().into_os_string())
         .collect();
     process
         .stdin
         .ok_or(eyre!("Failed to grab stdin"))?
-        .write_all(file_paths.join("\n").as_bytes())?;
+        .write_all(filepaths.join(OsStr::new("\n")).as_bytes())?;
     let mut out = String::new();
     process
         .stdout
