@@ -1,8 +1,7 @@
 mod helpers;
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
 use std::io::{Read, Write};
-use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{ops::RangeInclusive, str};
@@ -15,7 +14,7 @@ use eyre::eyre;
 use ignore::{DirEntry, WalkBuilder};
 use serde::{Deserialize, Serialize};
 
-use helpers::filter_c_files;
+use helpers::{filter_c_files, join_filepath_list};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Tag {
@@ -54,10 +53,11 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
         .into_iter()
         .map(|d| d.into_path().into_os_string())
         .collect();
+    let x = join_filepath_list(filepaths);
     process
         .stdin
         .ok_or(eyre!("Failed to grab stdin"))?
-        .write_all(filepaths.join(OsStr::new("\n")).as_bytes())?;
+        .write_all(&x)?;
     let mut out = String::new();
     process
         .stdout

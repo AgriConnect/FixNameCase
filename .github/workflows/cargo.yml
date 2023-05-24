@@ -24,4 +24,6 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: Built binaries
-          path: target/release/fix-name-case
+          path: |
+            target/release/fix-name-case
+            target/release/fix-name-case.exe
