@@ -1,17 +1,19 @@
+mod helpers;
+
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{ops::RangeInclusive, str};
 
-use console::{Emoji, style};
 use color_eyre::eyre::Context;
 use color_eyre::Result;
+use console::{style, Emoji};
 use convert_case::{Case, Casing};
 use eyre::eyre;
-use glob_match::glob_match;
 use ignore::{DirEntry, WalkBuilder};
 use serde::{Deserialize, Serialize};
-use which;
+
+use helpers::filter_c_files;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Tag {
@@ -31,14 +33,7 @@ const IRREGULAR_REPLACEMENTS: [(&str, &str); 3] = [
 /// Extract variable, function names from source folder, by ctags.
 fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
     let walker = WalkBuilder::new(folder)
-        .filter_entry(|d| {
-            let path = d.path();
-            if path.is_dir() {
-                return true;
-            }
-            path.to_str()
-                .map_or(false, |s| glob_match("*/**/*.{c,cpp,h,hpp,ino}", s))
-        })
+        .filter_entry(filter_c_files)
         .build();
     let entries: Vec<DirEntry> = walker.filter_map(|entry| entry.ok()).collect();
     let mut command = Command::new("ctags");
@@ -75,6 +70,8 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
         .collect();
     let mut var_names: Vec<String> = variables.into_iter().map(|t| t.name).collect();
     var_names.sort_unstable_by_key(|n| n.len());
+
+    // We should replace longest name first
     var_names.reverse();
     Ok(var_names)
 }
@@ -105,7 +102,7 @@ Convert variable and function names to snake_case in C/C++ source code.
 Hidden files and files listed in .gitignore are ignored.
 */
 #[fncmd::fncmd]
-fn main(folder: std::path::PathBuf) -> Result<()> {
+fn main(folder: PathBuf) -> Result<()> {
     color_eyre::install()?;
     folder.try_exists().wrap_err("Input folder not exist")?;
     which::which("ctags").wrap_err("ctags is not found. Please install from https://ctags.io/")?;
@@ -122,7 +119,7 @@ fn main(folder: std::path::PathBuf) -> Result<()> {
     let replacements = deduce_new_names(non_snake_names);
     if replacements.is_empty() {
         println!("{}", style("Found no names to fix.").yellow());
-        return Ok(())
+        return Ok(());
     }
     println!("{}", style("To rename:").blue());
     for (name, new_name) in replacements {

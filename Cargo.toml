@@ -1,7 +1,11 @@
 [package]
 name = "fix-name-case"
-version = "0.1.0"
+version = "1.0.0"
+authors = ["Nguyễn Hồng Quân <ng.hong.quan@gmail.com>"]
+license = "GPL-3.0-or-later"
 edition = "2021"
+description = "CLI tool to convert variable and function names to snake_case"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,3 +20,12 @@ ignore = "0.4.20"
 serde = { version = "1.0.163", features = ["derive"] }
 serde_json = "1.0.96"
 which = "4.4.0"
+
+[package.metadata.deb]
+copyright = "2023, Nguyễn Hồng Quân <ng.hong.quan@gmail.com>"
+maintainer = "Nguyễn Hồng Quân <ng.hong.quan@gmail.com>"
+section = "rust"
+license-file = ["debian/license", "3"]
+changelog = "debian/changelog"
+extended-description = """Hidden files and files listed in .gitignore are untouched.
+For now, only C/C++ files are supported."""

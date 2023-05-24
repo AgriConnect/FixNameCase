@@ -1,0 +1,5 @@
+fix-name-case (1.0.0-1) jammy; urgency=low
+
+  * First release.
+
+ -- Nguyễn Hồng Quân <ng.hong.quan@gmail.com>  Wed, 24 May 2023 14:13:12 +0700
