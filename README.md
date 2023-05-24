@@ -2,7 +2,7 @@ FixNameCase
 ===========
 
 
-Tool to change case of variable names, function names in C++ source code.
+Tool to change case of variable and function names in C/C++ source code, from cameCalse to snake_case.
 
 Usage
 -----
@@ -14,4 +14,7 @@ fix-name-case input_folder
 Requirements
 ------------
 
-[Universal Ctags](http://ctags.io/) is installed.
+Please install these softwares:
+
+ - [Universal Ctags](http://ctags.io/).
+ - [Amber](https://github.com/dalance/amber).
