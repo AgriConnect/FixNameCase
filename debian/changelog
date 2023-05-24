@@ -1,3 +1,10 @@
+fix-name-case (1.1.0-1) jammy; urgency=low
+
+  * Fix case of finding no C/C++ files in input folder.
+  * Support Windows.
+
+ -- Nguyễn Hồng Quân <ng.hong.quan@gmail.com>  Thu, 25 May 2023 01:30:00 +0700
+
 fix-name-case (1.0.0-1) jammy; urgency=low
 
   * First release.
