@@ -2,7 +2,7 @@ FixNameCase
 ===========
 
 
-Tool to change case of variable and function names in C/C++ source code, from cameCalse to snake_case.
+Tool to convert variable and function names in C/C++ source code to snake_case.
 
 Usage
 -----

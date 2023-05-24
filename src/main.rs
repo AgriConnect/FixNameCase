@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{ops::RangeInclusive, str};
 
-use case_converter::camel_to_snake;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
+use convert_case::{Case, Casing};
 use eyre::eyre;
 use glob_match::glob_match;
 use ignore::{DirEntry, WalkBuilder};
@@ -86,7 +86,7 @@ fn fix_irregulars(mut name: String) -> String {
 }
 
 /**
-Convert variable and function names from camelCase to snake_case in C/C++ source code.
+Convert variable and function names to snake_case in C/C++ source code.
 
 Hidden files and files listed in .gitignore are ignored.
 */
@@ -106,7 +106,10 @@ fn main(folder: std::path::PathBuf) -> Result<()> {
         })
         .collect();
     for name in non_snake_names {
-        let new_name = camel_to_snake(fix_irregulars(name.clone()).as_str());
+        let new_name = fix_irregulars(name.clone()).to_case(Case::Snake);
+        if new_name == name {
+            continue;
+        }
         println!("To rename: {} -> {}", name, new_name);
         let status = Command::new("ambr")
             .current_dir(&folder)
