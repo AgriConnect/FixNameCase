@@ -37,6 +37,23 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
         .filter_entry(filter_c_files)
         .build();
     let entries: Vec<DirEntry> = walker.filter_map(|entry| entry.ok()).collect();
+    let filepaths: Vec<OsString> = entries
+        .clone()
+        .into_iter()
+        .filter_map(|d| {
+            // To exclude directories
+            let path = d.into_path();
+            if path.is_file() {
+                Some(path.into_os_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+    if filepaths.is_empty() {
+        return Ok(Vec::new());
+    }
+    let file_list = join_filepath_list(filepaths);
     let mut command = Command::new("ctags");
     command.stdin(Stdio::piped());
     command.stdout(Stdio::piped());
@@ -48,16 +65,10 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
         "-",
     ]);
     let process = command.spawn()?;
-    let filepaths: Vec<OsString> = entries
-        .clone()
-        .into_iter()
-        .map(|d| d.into_path().into_os_string())
-        .collect();
-    let x = join_filepath_list(filepaths);
     process
         .stdin
         .ok_or(eyre!("Failed to grab stdin"))?
-        .write_all(&x)?;
+        .write_all(&file_list)?;
     let mut out = String::new();
     process
         .stdout
