@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{ops::RangeInclusive, str};
 
+use console::{Emoji, style};
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use convert_case::{Case, Casing};
@@ -85,6 +86,19 @@ fn fix_irregulars(mut name: String) -> String {
     name
 }
 
+fn deduce_new_names(names: Vec<String>) -> Vec<(String, String)> {
+    names
+        .into_iter()
+        .filter_map(|name| {
+            let new_name = fix_irregulars(name.clone()).to_case(Case::Snake);
+            if new_name == name {
+                return None;
+            }
+            Some((name, new_name))
+        })
+        .collect()
+}
+
 /**
 Convert variable and function names to snake_case in C/C++ source code.
 
@@ -105,12 +119,14 @@ fn main(folder: std::path::PathBuf) -> Result<()> {
             iter.any(|c| name.contains(c as char))
         })
         .collect();
-    for name in non_snake_names {
-        let new_name = fix_irregulars(name.clone()).to_case(Case::Snake);
-        if new_name == name {
-            continue;
-        }
-        println!("To rename: {} -> {}", name, new_name);
+    let replacements = deduce_new_names(non_snake_names);
+    if replacements.is_empty() {
+        println!("{}", style("Found no names to fix.").yellow());
+        return Ok(())
+    }
+    println!("{}", style("To rename:").blue());
+    for (name, new_name) in replacements {
+        println!("    {name} -> {new_name}");
         let status = Command::new("ambr")
             .current_dir(&folder)
             .args(["--no-interactive", &name, &new_name])
@@ -119,5 +135,6 @@ fn main(folder: std::path::PathBuf) -> Result<()> {
             continue;
         }
     }
+    println!("{} {}", Emoji("🎉", "v"), style("Done!").bright().green());
     Ok(())
 }
