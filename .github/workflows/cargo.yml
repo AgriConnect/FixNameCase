@@ -17,13 +17,14 @@ jobs:
           toolchain: stable
       - uses: actions-rs/cargo@v1
         with:
+          profile: minimal
           command: build
-          args: --release --all-features
+          args: --release --all-features --target-dir ${{ matrix.os }}
 
       - name: Archive built files
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Built binaries
           path: |
-            target/release/fix-name-case
-            target/release/fix-name-case.exe
+            ${{ matrix.os }}/release/fix-name-case
+            ${{ matrix.os }}/release/fix-name-case.exe
