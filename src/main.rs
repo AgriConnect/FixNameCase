@@ -4,7 +4,6 @@ use std::ffi::OsString;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::{ops::RangeInclusive, str};
 
 use color_eyre::eyre::Context;
 use color_eyre::Result;
@@ -13,6 +12,7 @@ use convert_case::{Case, Casing};
 use eyre::eyre;
 use ignore::{DirEntry, WalkBuilder};
 use serde::{Deserialize, Serialize};
+use unicode_intervals::UnicodeCategory;
 
 use helpers::{filter_c_files, join_filepath_list};
 
@@ -23,7 +23,6 @@ struct Tag {
     kind: String,
 }
 
-const UPPER_LETTERS: RangeInclusive<u8> = b'A'..=b'Z';
 const SYMBOL_KINDS: [&str; 4] = ["variable", "function", "local", "parameter"];
 const IRREGULAR_REPLACEMENTS: [(&str, &str); 3] = [
     ("MQTT", "Mqtt"),
@@ -90,18 +89,19 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
     Ok(var_names)
 }
 
-fn fix_irregulars(mut name: String) -> String {
+fn fix_irregulars(name: &str) -> String {
+    let mut nn = name.clone().to_string();
     for (s, r) in IRREGULAR_REPLACEMENTS {
-        name = name.replace(s, r);
+        nn = nn.replace(s, r);
     }
-    name
+    nn
 }
 
 fn deduce_new_names(names: Vec<String>) -> Vec<(String, String)> {
     names
         .into_iter()
         .filter_map(|name| {
-            let new_name = fix_irregulars(name.clone()).to_case(Case::Snake);
+            let new_name = fix_irregulars(&name).to_case(Case::Snake);
             if new_name == name {
                 return None;
             }
@@ -123,11 +123,11 @@ fn main(folder: PathBuf) -> Result<()> {
     which::which("ambr")
         .wrap_err("ambr is not found. Please install from https://github.com/dalance/amber")?;
     let var_names = get_symbols(&folder)?;
+    let upper_letters = unicode_intervals::query().include_categories(UnicodeCategory::UPPERCASE_LETTER).interval_set()?;
     let non_snake_names: Vec<String> = var_names
         .into_iter()
         .filter(|name| {
-            let mut iter = UPPER_LETTERS.clone().into_iter();
-            iter.any(|c| name.contains(c as char))
+            name.chars().any(|c| upper_letters.contains(c))
         })
         .collect();
     let replacements = deduce_new_names(non_snake_names);
