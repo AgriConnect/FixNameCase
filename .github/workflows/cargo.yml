@@ -20,12 +20,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --all-features --target-dir ${{ matrix.os }}
+          args: --release --all-features --target-dir out/${{ matrix.os }}
 
       - name: Archive built files
         uses: actions/upload-artifact@v3
         with:
           name: Built binaries
           path: |
-            ${{ matrix.os }}/release/fix-name-case
-            ${{ matrix.os }}/release/fix-name-case.exe
+            */${{ matrix.os }}/release/fix-name-case
+            */${{ matrix.os }}/release/fix-name-case.exe
