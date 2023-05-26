@@ -123,12 +123,12 @@ fn main(folder: PathBuf) -> Result<()> {
     which::which("ambr")
         .wrap_err("ambr is not found. Please install from https://github.com/dalance/amber")?;
     let var_names = get_symbols(&folder)?;
-    let upper_letters = unicode_intervals::query().include_categories(UnicodeCategory::UPPERCASE_LETTER).interval_set()?;
+    let upper_letters = unicode_intervals::query()
+        .include_categories(UnicodeCategory::UPPERCASE_LETTER)
+        .interval_set()?;
     let non_snake_names: Vec<String> = var_names
         .into_iter()
-        .filter(|name| {
-            name.chars().any(|c| upper_letters.contains(c))
-        })
+        .filter(|name| name.chars().any(|c| upper_letters.contains(c)))
         .collect();
     let replacements = deduce_new_names(non_snake_names);
     if replacements.is_empty() {
