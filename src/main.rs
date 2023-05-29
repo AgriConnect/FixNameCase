@@ -8,7 +8,7 @@ use std::process::{Command, Stdio};
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use console::{style, Emoji};
-use convert_case::{Case, Casing};
+use convert_case::{Boundary, Case, Casing};
 use eyre::eyre;
 use ignore::{DirEntry, WalkBuilder};
 use serde::{Deserialize, Serialize};
@@ -101,7 +101,14 @@ fn deduce_new_names(names: Vec<String>) -> Vec<(String, String)> {
     names
         .into_iter()
         .filter_map(|name| {
-            let new_name = fix_irregulars(&name).to_case(Case::Snake);
+            let new_name = fix_irregulars(&name)
+                .with_boundaries(&[
+                    Boundary::LowerUpper,
+                    Boundary::DigitUpper,
+                    Boundary::LowerDigit,
+                    Boundary::Acronym,
+                ])
+                .to_case(Case::Snake);
             if new_name == name {
                 return None;
             }

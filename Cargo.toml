@@ -1,6 +1,6 @@
 [package]
 name = "fix-name-case"
-version = "1.2.2"
+version = "1.2.3"
 authors = ["Nguyễn Hồng Quân <ng.hong.quan@gmail.com>"]
 license = "GPL-3.0-or-later"
 edition = "2021"

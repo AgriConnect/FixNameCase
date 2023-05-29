@@ -342,7 +342,7 @@ dependencies = [
 
 [[package]]
 name = "fix-name-case"
-version = "1.2.2"
+version = "1.2.3"
 dependencies = [
  "byte-slice-cast",
  "color-eyre",
