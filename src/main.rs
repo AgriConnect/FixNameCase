@@ -2,9 +2,10 @@ mod helpers;
 
 use std::ffi::OsString;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use clap::Parser;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use console::{style, Emoji};
@@ -15,6 +16,12 @@ use serde::{Deserialize, Serialize};
 use unicode_intervals::UnicodeCategory;
 
 use helpers::{filter_c_files, join_filepath_list};
+
+#[derive(Debug, Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    folder: PathBuf,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Tag {
@@ -31,7 +38,7 @@ const IRREGULAR_REPLACEMENTS: [(&str, &str); 3] = [
 ];
 
 /// Extract variable, function names from source folder, by ctags.
-fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
+fn get_symbols(folder: &Path) -> Result<Vec<String>> {
     let walker = WalkBuilder::new(folder)
         .filter_entry(filter_c_files)
         .build();
@@ -90,18 +97,18 @@ fn get_symbols(folder: &PathBuf) -> Result<Vec<String>> {
 }
 
 fn fix_irregulars(name: &str) -> String {
-    let mut nn = name.clone().to_string();
+    let mut nn = name.to_string();
     for (s, r) in IRREGULAR_REPLACEMENTS {
         nn = nn.replace(s, r);
     }
     nn
 }
 
-fn deduce_new_names(names: Vec<String>) -> Vec<(String, String)> {
+fn deduce_new_names<'a>(names: &'a [String]) -> Vec<(&'a str, String)> {
     names
-        .into_iter()
+        .iter()
         .filter_map(|name| {
-            let new_name = fix_irregulars(&name)
+            let new_name = fix_irregulars(name)
                 .with_boundaries(&[
                     Boundary::LowerUpper,
                     Boundary::DigitUpper,
@@ -109,10 +116,10 @@ fn deduce_new_names(names: Vec<String>) -> Vec<(String, String)> {
                     Boundary::Acronym,
                 ])
                 .to_case(Case::Snake);
-            if new_name == name {
+            if new_name == *name {
                 return None;
             }
-            Some((name, new_name))
+            Some((name.as_str(), new_name))
         })
         .collect()
 }
@@ -122,9 +129,10 @@ Convert variable and function names to snake_case in C/C++ source code.
 
 Hidden files and files listed in .gitignore are ignored.
 */
-#[fncmd::fncmd]
-fn main(folder: PathBuf) -> Result<()> {
+fn main() -> Result<()> {
     color_eyre::install()?;
+    let cli = Cli::parse();
+    let folder = cli.folder;
     folder.try_exists().wrap_err("Input folder not exist")?;
     which::which("ctags").wrap_err("ctags is not found. Please install from https://ctags.io/")?;
     which::which("ambr")
@@ -137,7 +145,7 @@ fn main(folder: PathBuf) -> Result<()> {
         .into_iter()
         .filter(|name| name.chars().any(|c| upper_letters.contains(c)))
         .collect();
-    let replacements = deduce_new_names(non_snake_names);
+    let replacements = deduce_new_names(non_snake_names.as_slice());
     if replacements.is_empty() {
         println!("{}", style("Found no names to fix.").yellow());
         return Ok(());
